@@ -1,0 +1,29 @@
+[alias]
+	# Lists commits on the upstream branch that aren't on your local branch
+	audit = "!git fetch && git -c color.ui=always log --format='%C(yellow)%h %C(magenta)[%G?] %C(reset)%s' HEAD..@{u} | grep --color=always -v ' [G] '"
+	cne = commit --no-edit
+	co = checkout
+	ci = commit
+	cif = commit --fixup
+	lga = log --graph --all
+	lg = "log --graph --all --format=\"%C(bold blue)%G? %C(auto)%h%d %s%C(reset)\""
+	ca = commit --amend --no-edit
+	fp = fetch --prune
+	m = merge --no-ff
+	rc = rebase --continue
+	puf = push --force-with-lease
+	pushf = push --force-with-lease
+	pus = push
+	psh = push
+	psuh = push
+	puhs = push
+	upsh = push
+
+	change = "!f() {\
+  echo Changelog from $(git describe --always --abbrev=0 ${1:-HEAD}~) to $(git describe --always ${1:-HEAD});\
+  git log $(git describe --always --abbrev=0 ${1:-HEAD}~)..${1:-HEAD} --oneline --graph;\
+}; f \
+"
+	continue = "-c core.editor=true rebase --continue"
+
+	trim = "!f() { git trim-merged; git trim-gone $1; }; f"

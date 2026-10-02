@@ -1,0 +1,7 @@
+
+[init]
+	templateDir = ~/.dotfiles/git/templates
+# [ticket]
+# 	urltemplate = https://my.atlassian.net/browse/$ticketId
+# 	regex = (^|.*/)([A-Z0-9]+-[0-9]+)([-/].+)?$
+# 	regexGroup = 2
