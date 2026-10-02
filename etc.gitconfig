@@ -1,0 +1,12 @@
+[rerere]
+	enabled = true
+[core]
+	autocrlf = input
+[init]
+	defaultBranch = main
+[merge]
+	conflictstyle = diff3
+[push]
+	autoSetupRemote = true
+[pull]
+	rebase = true
