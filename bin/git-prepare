@@ -29,7 +29,7 @@ if [ "$1" = "--base" ]; then
 	shift
 
 	if [ -z "$1" ]; then
-		git config get --default "origin/HEAD" prepare.base
+		git config --get --default "origin/HEAD" prepare.base
 		exit 0
 	fi
 
@@ -43,10 +43,10 @@ if [ "$1" = "--base" ]; then
 	fi
 
 	if [ "$1" = "--unset" ]; then
-		git config unset $local_or_worktree_config_flag prepare.base
+		git config --unset $local_or_worktree_config_flag prepare.base
 		exit $?
 	fi
-	git config set $local_or_worktree_config_flag prepare.base "$*"
+	git config --set $local_or_worktree_config_flag prepare.base "$*"
 	exit $?
 fi
 
@@ -56,7 +56,7 @@ if [ "$1" = "-D" ]; then
 	shift
 fi
 
-prepare_base=$(git config get --default "origin/HEAD" prepare.base)
+prepare_base=$(git config --get --default "origin/HEAD" prepare.base)
 
 git fetch --prune
 git checkout $prepare_base

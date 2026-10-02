@@ -52,7 +52,7 @@ if [ -n "$jump_target" ] && [ $jump_target_is_local_branch -eq 0 ]; then
 	exit 1
 fi
 
-prepare_base="$(git config get --default "origin/HEAD" prepare.base)"
+prepare_base="$(git config --get --default "origin/HEAD" prepare.base)"
 
 if [ -n "$jump_target" ]; then
 	git jump $jump_param "$jump_target" || exit 1;
