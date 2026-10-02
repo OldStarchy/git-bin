@@ -1,0 +1,89 @@
+#!/bin/sh
+
+# Usage:
+# 	git jump
+# 	git jump [-d|-D]
+# 	git jump -R
+# 	git jump [-d|-D] <branch>
+#
+# `git jump`
+# 	checks-out the current commit in detached HEAD state without deleting any branches.
+#
+# `git jump [-d|-D]`
+# 	checks-out the current commit in detached HEAD state and deletes the branch you were on previously using `git branch -d`
+# 	or `git branch -D`, respectively.
+#
+# `git jump -R`
+# 	If the current branch has an upstream branch, reset the current branch to the upstream commit and preserve its upstream.
+# 	If the current branch does not have an upstream branch, an error will be printed and nothing will happen.
+#
+# `git jump [-d|-D] <branch>`
+# 	checks-out the given branch and deletes the branch you were on previously using `git branch -d` or `git branch -D`,
+# 	respectively. If the given branch cannot be resolved to a local or remote branch, nothing will happen.
+
+set -e
+
+current_branch=$(git rev-parse --abbrev-ref HEAD) || exit 1
+d_flag=-d
+delete_requested=0
+recreate_branch=0
+
+if [ "$1" = "-R" ]; then
+	upstream_branch=$(git rev-parse --symbolic-full-name "@{u}") || {
+		echo "Current branch has no upstream branch." >&2
+		exit 1
+	}
+	to_branch=$current_branch
+	to_start=$upstream_branch
+	d_flag=-D
+	delete_requested=1
+	recreate_branch=1
+elif [ "$1" = "-d" ] || [ "$1" = "-D" ]; then
+	d_flag=$1
+	delete_requested=1
+	shift
+	to_branch=$1
+else
+	to_branch=$1
+fi
+
+if [ -n "$to_branch" ] && [ -z "$to_start" ]; then
+	to_start=$(git rev-parse --verify "$to_branch^{commit}" 2>/dev/null) || {
+		to_start=$(git for-each-ref --format='%(refname)' "refs/remotes/*/$to_branch" | head -n 1)
+		if [ -z "$to_start" ]; then
+			echo "Branch not found: $to_branch" >&2
+			exit 1
+		fi
+	}
+fi
+
+is_on_a_branch=$(git rev-parse --abbrev-ref HEAD)
+
+git checkout --detach HEAD > /dev/null 2>&1
+
+short_hash=$(git rev-parse --short "$current_branch")
+
+if [ $delete_requested -eq 1 ]; then
+	if [ "$is_on_a_branch" != "HEAD" ]; then
+		git branch "$d_flag" "$current_branch" > /dev/null
+		if [ "$current_branch" != "$to_branch" ]; then
+			echo "Deleted branch $current_branch (was $short_hash)"
+		fi
+	fi
+fi
+
+if [ -n "$to_branch" ]; then
+	to_short_hash=$(git rev-parse --short "$to_start")
+
+	if [ $recreate_branch -eq 1 ]; then
+		git checkout -b "$to_branch" --track "$to_start"
+	elif [ "$to_branch" = "$current_branch" ] && [ $delete_requested -eq 1 ]; then
+		git checkout -b "$to_branch" "$to_start" 2> /dev/null
+
+		if [ "$to_short_hash" != "$short_hash" ]; then
+			echo "Moved branch $current_branch to $to_short_hash (was $short_hash)"
+		fi
+	else
+		git checkout "$to_branch"
+	fi
+fi

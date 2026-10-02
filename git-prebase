@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Usage:
+# 	git prebase
+# 	git prebase [-j|J] <branch-name>
+#
+# 	`git prebase` fetches and starts an interactive rebase with autosquash onto
+# 	`prepare.base` (origin/HEAD by default). See `git prepare --base` for
+# 	details on how to configure the base branch.
+#
+# 	Use this to clean up a branch prior to merging.
+#
+# 	`git prebase [-j|J] <branch-name>` will call `git jump <branch-name>` after
+# 	fetching, either `-d` or `-D` will be passed if `-j` or `-J` is used,
+# 	respectively.
+# 	This is a convenience to switch to the given branch in case you were working
+# 	on something else.
+#
+# Example:
+# 	some\path [my-wip ≡]> git prebase my-approved-feature
+# 	# complete interactive rebase
+# 	some\path [my-approved-feature ↓5 ↑25]> git push --force-with-lease
+#
+# 	some\path [review-branch ≡]> git prebase -J my-approved-feature
+# 	# review-branch is deleted
+# 	# complete interactive rebase
+# 	some\path [my-approved-feature ↓5 ↑25]> git push --force-with-lease
+
+set -e
+
+jump_param=""
+if [ "-J" = "$1" ]; then
+	jump_param="-D"
+	shift
+elif [ "-j" = "$1" ]; then
+	jump_param="-d"
+	shift
+fi
+
+jump_target="$1"
+
+jump_target_is_local_branch=0
+
+if [ -n "$jump_target" ]; then
+	if git show-ref --verify --quiet "refs/heads/$jump_target"; then
+		jump_target_is_local_branch=1
+	fi
+fi
+
+if [ -n "$jump_target" ] && [ $jump_target_is_local_branch -eq 0 ]; then
+	echo "Branch not found: $jump_target" >&2
+	exit 1
+fi
+
+prepare_base="$(git config get --default "origin/HEAD" prepare.base)"
+
+if [ -n "$jump_target" ]; then
+	git jump $jump_param "$jump_target" || exit 1;
+else
+	if [ -n "$jump_param" ]; then
+		echo "$jump_param must be paired with a branch name" || exit 1;
+	fi
+fi
+
+git fetch
+git rebase --interactive --autosquash "$prepare_base"

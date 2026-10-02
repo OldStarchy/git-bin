@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# Usage:
+# 	git prepare [-D] [branch-name]
+# 	git prepare --base
+# 	git prepare --base [--global|--worktree] <branch-name>
+# 	git prepare --base [--global|--worktree] --unset
+#
+# 	`git prepare` fetches, prunes, trims, checks-out `prepare.base` (which is
+# 	origin/HEAD by default), and optionally creates a new branch if a new branch
+# 	name is given.
+#
+# 	Pass -D to force delete local branches that are not merged.
+#
+# 	`git prepare --base` prints the current prepare.base branch.
+#
+# 	`git prepare --base [--global|--worktree] <branch-name>` sets the prepare.base
+# 	branch to the given branch name. Equivalent to
+# 	`git config set [--global|--worktree] prepare.base <branch-name>`
+#
+# 	To configure the base branch to check-out, set `prepare.base` in your git config. For example:
+# 		git config --global prepare.base origin/main
+# 	This can be set per-worktree, though the steps to enable per-worktree
+# 	configuration are not documented here.
+
+set -e
+
+if [ "$1" = "--base" ]; then
+	shift
+
+	if [ -z "$1" ]; then
+		git config get --default "origin/HEAD" prepare.base
+		exit 0
+	fi
+
+	local_or_worktree_config_flag=""
+	if [ "$1" = "--global" ]; then
+		local_or_worktree_config_flag="--global"
+		shift
+	elif [ "$1" = "--worktree" ]; then
+		local_or_worktree_config_flag="--worktree"
+		shift
+	fi
+
+	if [ "$1" = "--unset" ]; then
+		git config unset $local_or_worktree_config_flag prepare.base
+		exit $?
+	fi
+	git config set $local_or_worktree_config_flag prepare.base "$*"
+	exit $?
+fi
+
+trim_param=""
+if [ "$1" = "-D" ]; then
+	trim_param="-D"
+	shift
+fi
+
+prepare_base=$(git config get --default "origin/HEAD" prepare.base)
+
+git fetch --prune
+git checkout $prepare_base
+git trim-merged
+git trim-gone $trim_param
+
+if [ -n "$1" ]; then
+	git checkout -b $1
+fi

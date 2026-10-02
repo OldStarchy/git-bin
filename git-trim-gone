@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Usage:
+# 	git trim-gone [-D]
+#
+# 	Deletes any local branches who's remote tracking branch has been deleted.
+# 	Pass -D to force delete local branches that are not merged.
+
+d_flag="-d"
+if [ -n "$1" ]; then
+	if [ "$1" != "-D" ]; then
+		echo "Invalid argument: $1" >&2
+		exit 1
+	fi
+	d_flag="-D"
+fi
+
+branches=$(git for-each-ref refs/heads/ '--format=%(refname:short) %(upstream:track)' | awk '$2 == "[gone]" {print $1}');
+
+if [ -n "$branches" ]; then
+	for branch in $branches; do
+		short_hash=$(git rev-parse --short "$branch")
+		git branch $d_flag "$branch" > /dev/null || exit 1
+		echo "Deleted gone branch $branch (was $short_hash)"
+	done
+else
+	echo "No gone branches to delete." >&2
+fi

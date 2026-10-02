@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Usage:
+# 	git trim-merged
+#
+# 	Deletes any branches reachable from HEAD except those that point directly to HEAD.
+
+branches=$(git branch --merged HEAD --no-contains HEAD | grep -Ev ^\\*);
+
+if [ -n "$branches" ]; then
+	for branch in $branches; do
+		short_hash=$(git rev-parse --short "$branch")
+		git branch -d "$branch" > /dev/null || exit 1
+		echo "Deleted merged branch $branch (was $short_hash)"
+	done
+else
+	echo "No merged branches to delete." >&2
+fi
