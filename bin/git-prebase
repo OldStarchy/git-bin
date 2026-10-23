@@ -28,12 +28,18 @@
 
 set -e
 
+interactive_flag="--interactive"
 jump_param=""
 if [ "-J" = "$1" ]; then
 	jump_param="-D"
 	shift
 elif [ "-j" = "$1" ]; then
 	jump_param="-d"
+	shift
+fi
+
+if [ "-y" = "$1" ]; then
+	interactive_flag=""
 	shift
 fi
 
@@ -63,4 +69,4 @@ else
 fi
 
 git fetch
-git rebase --interactive --autosquash "$prepare_base"
+git rebase $interactive_flag --autosquash "$prepare_base"
